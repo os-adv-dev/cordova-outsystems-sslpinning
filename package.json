@@ -1,0 +1,37 @@
+{
+  "name": "@outsystems/cordova-outsystems-sslpinning",
+  "version": "5.0.2",
+  "description": "OutSystems SSL Pinning",
+  "cordova": {
+    "id": "cordova-outsystems-sslpinning",
+    "platforms": [
+      "ios",
+      "android"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OutSystems/cordova-outsystems-sslpinning.git"
+  },
+  "keywords": [
+    "security",
+    "outsystems",
+    "cordova",
+    "ecosystem:cordova",
+    "cordova-ios",
+    "cordova-android"
+  ],
+  "author": "OutSystems",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/OutSystems/cordova-outsystems-sslpinning/issues"
+  },
+  "homepage": "https://github.com/OutSystems/cordova-outsystems-sslpinning#readme",
+  "dependencies": {
+    "xml2js": "^0.4.19",
+    "q": "^1.5.1",
+    "cordova-common" : "^4.0.2",
+    "xcode" : "^3.0.1",
+    "plist" : "^3.0.1"
+  }
+}

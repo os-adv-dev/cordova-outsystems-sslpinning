@@ -1,0 +1,13 @@
+.idea
+.vscode
+.github
+ci
+node_modules
+os-appium-tests
+tests
+azure-pipelines.yml
+CONTRIBUTING.md
+PULL_REQUEST_TEMPLATE.md
+CHANGELOG.md
+commitlint.config.js
+outsystems-cordova-outsystems-sslpinning-*.tgz

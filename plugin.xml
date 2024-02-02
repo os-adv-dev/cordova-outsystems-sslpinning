@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://cordova.apache.org/ns/plugins/1.0" id="cordova-outsystems-sslpinning" version="5.0.2">
+    <name>OSSSLPinning</name>
+    <description>OutSystems SSL Pinning</description>
+    <keywords>security, outsystems, cordova</keywords>
+    
+    <preference name="CFG_FILE_PATH" default="pinning" />
+    <hook type="after_prepare" src="hooks/check_requirements.js" />
+    
+    <js-module src="www/SSLPinning.js" name="SSLPinning">
+        <clobbers target="SSLPinning" />
+    </js-module>
+    
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="SSLPinningPlugin">
+                <param name="ios-package" value="OSSecureHTTPPlugin" />
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+
+        <hook type="after_prepare" src="hooks/ios/setup_pinning_hashs.js" />
+        <hook type="after_prepare" src="hooks/ios/embed_framework.js" />
+
+        <header-file src="src/ios/OSSecureHTTPPlugin.h" />
+        <source-file src="src/ios/OSSecureHTTPPlugin.m" />
+
+        <header-file src="src/ios/OSSecureHTTPProtocol.h" />
+        <source-file src="src/ios/OSSecureHTTPProtocol.m" />
+
+        <framework src="libs/ios/TrustKit.framework" custom="true" embed="true" />
+    </platform>
+
+    <platform name="android">
+        <!-- JS API -->
+        <js-module src="www/NativeXMLHttpRequest.js" name="NativeXMLHttpRequest">
+            <merges target="window" />
+        </js-module>
+        <js-module src="www/XMLHttpRequestProxy.js" name="XMLHttpRequestProxy">
+        </js-module>
+        <js-module src="www/Base64.js" name="Base64">
+        </js-module>
+        <js-module src="www/url-polyfill.js" name="url-polyfill">
+        </js-module>
+
+        <hook type="after_prepare" src="hooks/android/setupNetworkConfig.js"/>
+
+        <config-file target="config.xml" parent="/*">
+            <feature name="SSLPinningPlugin">
+                <param name="android-package" value="com.outsystems.plugins.sslpinning.SSLPinningPlugin" />
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+
+        <!-- XHR Requests -->
+        <config-file target="config.xml" parent="/*">
+            <feature name="NativeXMLHttpRequestPlugin">
+                <param name="android-package" value="com.outsystems.plugins.sslpinning.NativeXMLHttpRequestPlugin" />
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+
+        <source-file src="src/android/pinning/OkHttpClientWrapper.java" target-dir="src/com/outsystems/plugins/sslpinning/pinning"/>
+        <source-file src="src/android/pinning/X509TrustManagerWrapper.java" target-dir="src/com/outsystems/plugins/sslpinning/pinning"/>
+        <source-file src="src/android/types/RequestEvents.java" target-dir="src/com/outsystems/plugins/sslpinning/types"/>
+        <source-file src="src/android/NativeXMLHttpRequestPlugin.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
+        <source-file src="src/android/SSLPinningPlugin.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
+
+        <framework src="libs/android/xmlhttprequest_build.gradle" custom="true" type="gradleReference" />
+    </platform>
+</plugin>
