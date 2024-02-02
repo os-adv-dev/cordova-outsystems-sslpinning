@@ -64,7 +64,7 @@ function setupNetworkConfig(context) {
                     let finalXML = builder.buildObject(result);
                     fs.writeFile(config, finalXML, 'utf-8', function(err){
                         if(err){
-                            throw new Error("Error writing file");
+                            throw new Error("Error writing file: "+err);
                         }
                     });
                 })
