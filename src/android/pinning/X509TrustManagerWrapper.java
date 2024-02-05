@@ -23,13 +23,16 @@ public class X509TrustManagerWrapper {
   /**
    * SSL pinning with hash of certificates
    */
-  public static CertificatePinner getPinningHash(Context context, String folder) {
-    String json = loadJSONFromAsset(context, folder);
+  public static CertificatePinner getPinningHash(Context context, String folder, Boolean isFromRemote) {
+    final String json = loadJSONFromAsset(context, folder);
+    return buildCertificatePinningFromJson(json, isFromRemote);
+  }
 
+  public static CertificatePinner buildCertificatePinningFromJson(String json, Boolean isFromRemote) {
     if (json == null) return null;
 
+    CertificatePinner.Builder builder = new CertificatePinner.Builder();
     try {
-      CertificatePinner.Builder builder = new CertificatePinner.Builder();
       JSONObject jsonObjectRoot = new JSONObject(json);
 
       if (jsonObjectRoot != null) {
@@ -44,7 +47,6 @@ public class X509TrustManagerWrapper {
           }
         }
       }
-
       return builder.build();
     } catch (JSONException e) {
       logger.logError("Failed to parse pinning JSON file: " + e.getMessage(), "OSSSLPinning", e);

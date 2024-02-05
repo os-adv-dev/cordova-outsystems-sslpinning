@@ -1,7 +1,9 @@
 package com.outsystems.plugins.sslpinning;
 
-import android.webkit.CookieManager;
 import android.os.Build;
+import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import com.outsystems.plugins.oslogger.OSLogger;
 import com.outsystems.plugins.oslogger.interfaces.Logger;
@@ -20,6 +22,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -30,7 +35,6 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.CertificatePinner;
 import okhttp3.ConnectionPool;
-import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -45,9 +49,15 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 	private static final int CON_MAX_IDLE_CONNECTIONS_DEFAULT = 5;
 	private static final int CON_KEEP_ALIVE_DEFAULT = 300;
 
+	private static CompletableFuture<CertificatePinner> certificatePinningFuture;
+	private PinningRemoteConfig pinningRemoteConfig;
+
 	@Override
 	protected void pluginInitialize() {
 		super.pluginInitialize();
+
+		pinningRemoteConfig = new PinningRemoteConfig();
+		certificatePinningFuture = getCertificatePinningAsync();
 
 		// Register Security implementation
 		if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.M){
@@ -75,7 +85,7 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 	public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
 
 		if (args == null || args.length() < 0) {
-			this.logger.logDebug("Method execute invoked without arguments", "OSSSLPinning");
+			logger.logDebug("Method execute invoked without arguments", "OSSSLPinning");
 			return false;
 		}
 
@@ -99,8 +109,19 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 
 	@Override
 	public CertificatePinner getCertificatePinner() {
-		String folderPreference = webView.getPreferences().getString("CFG_FILE_PATH", "pinning");
-		return X509TrustManagerWrapper.getPinningHash(cordova.getActivity(), folderPreference);
+		try {
+			if (getCertificatePinningFuture() != null) {
+				Log.v("TAG", "✅ -- Getting from getCertificatePinningFuture ");
+				return getCertificatePinningFuture().getNow(null);
+			} else {
+				String folderPreference = webView.getPreferences().getString("CFG_FILE_PATH", "pinning");
+				return X509TrustManagerWrapper.getPinningHash(cordova.getActivity(), folderPreference, false);
+			}
+		} catch (CompletionException | CancellationException e) {
+			Log.v("TAG", "❌ -- Error get local then: "+e.getMessage());
+			String folderPreference = webView.getPreferences().getString("CFG_FILE_PATH", "pinning");
+			return X509TrustManagerWrapper.getPinningHash(cordova.getActivity(), folderPreference, false);
+		}
 	}
 
 	@Override
@@ -108,6 +129,31 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 		return OkHttpClientWrapper.getInstance().getOkHttpClient();
 	}
 
+	public static CompletableFuture<CertificatePinner> getCertificatePinningFuture() {
+		return certificatePinningFuture;
+	}
+
+	public CompletableFuture<CertificatePinner> getCertificatePinningAsync() {
+		CompletableFuture<CertificatePinner> future = new CompletableFuture<>();
+		pinningRemoteConfig.getPinningJsonRemoteConfig(new RemoteConfigCallback() {
+			@Override
+			public void onConfigFetched(@Nullable String jsonObject) {
+				Log.v("TAG", "✅ -- Getting from onConfigFetched Remote: "+jsonObject);
+				CertificatePinner remoteCertificate = X509TrustManagerWrapper.buildCertificatePinningFromJson(jsonObject, true);
+				future.complete(remoteCertificate);
+			}
+
+			@Override
+			public void onError(@Nullable String error) {
+				Log.v("TAG", "✅ -- Getting from LOCAL ");
+				String folderPreference = webView.getPreferences().getString("CFG_FILE_PATH", "pinning");
+				CertificatePinner certificate = X509TrustManagerWrapper.getPinningHash(cordova.getActivity(), folderPreference, false);
+				future.complete(certificate);
+			}
+		});
+
+		return future;
+	}
 
 	private void request(final String url,final CallbackContext callbackContext) {
 		try{
@@ -176,7 +222,7 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 			ConnectionPool cP = new ConnectionPool(CON_MAX_IDLE_CONNECTIONS_DEFAULT, keepAliveConnection, TimeUnit.SECONDS);
 			clientBuilder.connectionPool(cP);
 		} catch (Exception e) {
-			this.logger.logError("Failed to get preference " + CON_KEEP_ALIVE_PREF + ": " + e.getMessage(), "OSSSLPinning", e);
+			logger.logError("Failed to get preference " + CON_KEEP_ALIVE_PREF + ": " + e.getMessage(), "OSSSLPinning", e);
 		}
 		return clientBuilder;
 	}

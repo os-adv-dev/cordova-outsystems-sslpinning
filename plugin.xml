@@ -43,7 +43,8 @@
         <js-module src="www/url-polyfill.js" name="url-polyfill">
         </js-module>
 
-        <hook type="after_prepare" src="hooks/android/setupNetworkConfig.js"/>
+        <!-- Removed for now, because we wil start getting the pinning from Firebase Remote Config -->
+       <!-- <hook type="after_prepare" src="hooks/android/setupNetworkConfig.js"/>-->
 
         <config-file target="config.xml" parent="/*">
             <feature name="SSLPinningPlugin">
@@ -65,6 +66,7 @@
         <source-file src="src/android/types/RequestEvents.java" target-dir="src/com/outsystems/plugins/sslpinning/types"/>
         <source-file src="src/android/NativeXMLHttpRequestPlugin.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
         <source-file src="src/android/SSLPinningPlugin.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
+        <source-file src="src/android/pinning/PinningRemoteConfig.kt" target-dir="src/com/outsystems/plugins/sslpinning"/>
 
         <framework src="libs/android/xmlhttprequest_build.gradle" custom="true" type="gradleReference" />
     </platform>
