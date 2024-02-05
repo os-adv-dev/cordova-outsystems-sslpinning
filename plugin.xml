@@ -53,6 +53,13 @@
             </feature>
         </config-file>
 
+        <config-file target="res/xml/config.xml" parent="/*">
+			<preference name="GradlePluginKotlinVersion" value="1.6.0" />
+			<preference name="GradlePluginKotlinEnabled" value="true" />
+            <preference name="GradlePluginKotlinCodeStyle" value="official" />
+            <preference name="AndroidXEnabled" value="true"/>
+        </config-file>
+
         <!-- XHR Requests -->
         <config-file target="config.xml" parent="/*">
             <feature name="NativeXMLHttpRequestPlugin">
@@ -66,7 +73,8 @@
         <source-file src="src/android/types/RequestEvents.java" target-dir="src/com/outsystems/plugins/sslpinning/types"/>
         <source-file src="src/android/NativeXMLHttpRequestPlugin.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
         <source-file src="src/android/SSLPinningPlugin.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
-        <source-file src="src/android/pinning/PinningRemoteConfig.kt" target-dir="src/com/outsystems/plugins/sslpinning"/>
+        <source-file src="src/android/PinningRemoteConfig.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
+        <source-file src="src/android/RemoteConfigCallback.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
 
         <framework src="libs/android/xmlhttprequest_build.gradle" custom="true" type="gradleReference" />
     </platform>
