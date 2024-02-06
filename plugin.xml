@@ -3,8 +3,7 @@
     <name>OSSSLPinning</name>
     <description>OutSystems SSL Pinning</description>
     <keywords>security, outsystems, cordova</keywords>
-    
-    <preference name="CFG_FILE_PATH" default="pinning" />
+
     
     <js-module src="www/SSLPinning.js" name="SSLPinning">
         <clobbers target="SSLPinning" />
@@ -18,6 +17,7 @@
             </feature>
         </config-file>
 
+        <preference name="CFG_FILE_PATH" default="pinning" />
         <!-- <hook type="after_prepare" src="hooks/check_requirements.js" /> -->
         <hook type="after_prepare" src="hooks/ios/setup_pinning_hashs.js" />
         <hook type="after_prepare" src="hooks/ios/embed_framework.js" />
