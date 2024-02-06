@@ -18,7 +18,7 @@
             </feature>
         </config-file>
 
-        <hook type="after_prepare" src="hooks/check_requirements.js" />
+        <!-- <hook type="after_prepare" src="hooks/check_requirements.js" /> -->
         <hook type="after_prepare" src="hooks/ios/setup_pinning_hashs.js" />
         <hook type="after_prepare" src="hooks/ios/embed_framework.js" />
 
