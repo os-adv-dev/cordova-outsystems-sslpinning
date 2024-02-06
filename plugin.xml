@@ -17,7 +17,7 @@
             </feature>
         </config-file>
 
-        <preference name="CFG_FILE_PATH" default="pinning" />
+       <!-- <preference name="CFG_FILE_PATH" default="pinning" /> -->
         <!-- <hook type="after_prepare" src="hooks/check_requirements.js" /> -->
         <hook type="after_prepare" src="hooks/ios/setup_pinning_hashs.js" />
         <hook type="after_prepare" src="hooks/ios/embed_framework.js" />
