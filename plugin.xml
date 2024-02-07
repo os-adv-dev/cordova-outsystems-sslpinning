@@ -8,6 +8,8 @@
     <js-module src="www/SSLPinning.js" name="SSLPinning">
         <clobbers target="SSLPinning" />
     </js-module>
+
+    <dependency id="cordova-outsystems-firebase-core" url="https://github.com/OutSystems/cordova-outsystems-firebase-core.git#2.0.0"/>
     
     <platform name="ios">
         <config-file target="config.xml" parent="/*">
