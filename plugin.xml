@@ -72,6 +72,6 @@
         <source-file src="src/android/RemoteConfigCallback.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
 
         <framework src="libs/android/xmlhttprequest_build.gradle" custom="true" type="gradleReference" />
-        <hook type="before_build" src="hooks/android/enableGoogleServicesHook.js" />
+        <!--<hook type="before_build" src="hooks/android/enableGoogleServicesHook.js" />-->
     </platform>
 </plugin>
