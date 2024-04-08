@@ -11,10 +11,13 @@ public class X509TrustManagerWrapper {
 
   private static Logger logger = OSLogger.getInstance();
 
+  private static CertificatePinner.Builder builder;
+
   public static CertificatePinner buildCertificatePinningFromJson(String json) {
     if (json == null) return null;
 
-    CertificatePinner.Builder builder = new CertificatePinner.Builder();
+    builder = new CertificatePinner.Builder();
+
     try {
       JSONObject jsonObjectRoot = new JSONObject(json);
 
@@ -35,5 +38,10 @@ public class X509TrustManagerWrapper {
       logger.logError("Failed to parse pinning JSON file: " + e.getMessage(), "OSSSLPinning", e);
       return null;
     }
+  }
+
+  public static CertificatePinner getCertificatePinner() {
+    if (builder == null) return null;
+    return builder.build();
   }
 }

@@ -68,10 +68,12 @@
         <source-file src="src/android/types/RequestEvents.java" target-dir="src/com/outsystems/plugins/sslpinning/types"/>
         <source-file src="src/android/NativeXMLHttpRequestPlugin.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
         <source-file src="src/android/SSLPinningPlugin.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
+        <source-file src="src/android/AddPinningWebClient.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
         <source-file src="src/android/PinningRemoteConfig.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
         <source-file src="src/android/RemoteConfigCallback.java" target-dir="src/com/outsystems/plugins/sslpinning"/>
 
         <framework src="libs/android/xmlhttprequest_build.gradle" custom="true" type="gradleReference" />
         <!--<hook type="before_build" src="hooks/android/enableGoogleServicesHook.js" />-->
+        <hook type="after_plugin_install" src="hooks/android/modifyWebClient.js" />
     </platform>
 </plugin>

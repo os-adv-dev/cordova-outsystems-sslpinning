@@ -169,6 +169,8 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 	}
 
 	private void request(final String url,final CallbackContext callbackContext) {
+		preferences.set("isSSLFirebaseRemoteFetch", true);
+
 		try{
 			Request request = new Request.Builder().url(url).build();
 
