@@ -46,7 +46,7 @@ public class AddPinningWebClient {
             if (!sslPinningFuture.get()) {
                 String extension = MimeTypeMap.getFileExtensionFromUrl(url);
                 String mimeType = MimeTypesHelper.getInstance().getMimeType(extension);
-                return new WebResourceResponse(mimeType, "UTF-8", 403, "SSLPinning found some problem with the request!", null, null);
+                return new WebResourceResponse(mimeType, "UTF-8", 525, "SSLPinning found some problem with the request!", null, null);
             }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
@@ -69,7 +69,7 @@ public class AddPinningWebClient {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 System.out.println("--- ❌ --- SSLPinning found some problem with the request!");
-                callback.onError("403", "SSLPinning found some problem with the request!");
+                callback.onError("525", "SSLPinning found some problem with the request!");
             }
 
             @Override
