@@ -1,8 +1,10 @@
 package com.outsystems.plugins.sslpinning;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.outsystems.plugins.oslogger.OSLogger;
@@ -22,9 +24,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -54,11 +54,15 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 
 	private CallbackContext callbackContext;
 
+	@SuppressLint("DiscouragedApi")
 	@Override
 	protected void pluginInitialize() {
 		super.pluginInitialize();
 
-		pinningRemoteConfig = new PinningRemoteConfig();
+		String fallbackUrl = cordova.getActivity().getString(cordova.getActivity().getResources().getIdentifier("URL_FALLBACK_SSL_PINNING", "string", cordova.getActivity().getPackageName()));
+		boolean forceUrlFallbackUrl = Boolean.parseBoolean(cordova.getActivity().getString(cordova.getActivity().getResources().getIdentifier("FORCE_USE_URL_FALLBACK", "string", cordova.getActivity().getPackageName())));
+
+		pinningRemoteConfig = new PinningRemoteConfig(fallbackUrl, forceUrlFallbackUrl);
 		certificatePinningFuture = getCertificatePinningAsync();
 
 		// Register Security implementation
@@ -111,27 +115,43 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 
 	@Override
 	public CertificatePinner getCertificatePinner() {
-		if (getCertificatePinningFuture() != null) {
-			Log.v("TAG", "✅ -- Getting from getCertificatePinningFuture ");
-			if (getCertificatePinningFuture().getNow(null) != null) {
-				return getCertificatePinningFuture().getNow(null);
+		try {
+			if (getCertificatePinningFuture() != null) {
+				Log.v("TAG", "✅ -- Getting from getCertificatePinningFuture ");
+				if (getCertificatePinningFuture().getNow(null) != null) {
+					return getCertificatePinningFuture().getNow(null);
+				} else {
+					return showError();
+				}
 			} else {
 				return showError();
 			}
-		} else {
-			return showError();
+		} catch (JSONException ex) {
+			if(ex.getMessage() != null) {
+				logger.logError(ex.getMessage(), "OSSSLPinning");
+			}
+			PluginResult pluginResultError = new PluginResult(PluginResult.Status.ERROR, ex.getMessage());
+			callbackContext.sendPluginResult(pluginResultError);
+			return null;
 		}
 	}
 
-	private CertificatePinner showError() {
+	private CertificatePinner showError() throws JSONException {
 		JSONObject jsonErrorResponse = new JSONObject();
+		PluginResult pluginResultError = new PluginResult(PluginResult.Status.ERROR, jsonErrorResponse);
+
 		try {
 			jsonErrorResponse.put("Code","1");
 			jsonErrorResponse.put("Message","SSLPinning found a issue with the configured certificate for the url!");
-			PluginResult pluginResultError = new PluginResult(PluginResult.Status.ERROR, jsonErrorResponse);
 			callbackContext.sendPluginResult(pluginResultError);
 			return null;
 		} catch (JSONException ex) {
+			if(ex.getMessage() != null) {
+				logger.logError(ex.getMessage(), "OSSSLPinning");
+			}
+			jsonErrorResponse.put("Code","1");
+			jsonErrorResponse.put("Message",ex.getMessage());
+			callbackContext.sendPluginResult(pluginResultError);
 			return null;
 		}
 	}
@@ -161,7 +181,7 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 
 			@Override
 			public void onError(@Nullable String error) {
-				future.complete(null);
+				future.completeExceptionally(new Exception(error != null ? error : "SSLPinning found a issue with the configured certificate"));
 			}
 		});
 
@@ -183,7 +203,7 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 
 			call.enqueue(new Callback() {
 				@Override
-				public void onFailure(Call call, IOException e) {
+				public void onFailure(@NonNull Call call, @NonNull IOException e) {
 					JSONObject jsonErrorResponse = new JSONObject();
 					try {
 						if (e instanceof SSLPeerUnverifiedException) {
@@ -217,17 +237,18 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 			} catch (JSONException e1) {
 				logger.logError("Failed to build JSON response on failure: " + e1.getMessage(), "OSSSLPinning", e1);
 			}
-			PluginResult pluginResultError =
-					new PluginResult(PluginResult.Status.ERROR, jsonErrorResponse);
+			PluginResult pluginResultError = new PluginResult(PluginResult.Status.ERROR, jsonErrorResponse);
 			callbackContext.sendPluginResult(pluginResultError);
 		}
-		
 	}
 
 	private OkHttpClient.Builder getHttpClientBuilder() {
 		OkHttpClient.Builder clientBuilder = OkHttpClientWrapper.getInstance().getOkHttpClient().newBuilder();
+		CertificatePinner certificatePinner = X509TrustManagerWrapper.getCertificatePinner();
 
-		if (this.getCertificatePinner() != null) {
+		if(certificatePinner != null && !certificatePinner.getPins().isEmpty()) {
+			clientBuilder.certificatePinner(certificatePinner);
+		} else if (this.getCertificatePinner() != null && !this.getCertificatePinner().getPins().isEmpty()) {
 			clientBuilder.certificatePinner(this.getCertificatePinner());
 		}
 

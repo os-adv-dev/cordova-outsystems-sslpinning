@@ -1,5 +1,7 @@
 package com.outsystems.plugins.sslpinning.pinning;
 
+import android.util.Log;
+
 import com.outsystems.plugins.oslogger.OSLogger;
 import com.outsystems.plugins.oslogger.interfaces.Logger;
 import org.json.JSONArray;
@@ -35,7 +37,8 @@ public class X509TrustManagerWrapper {
       }
       return builder.build();
     } catch (JSONException e) {
-      logger.logError("Failed to parse pinning JSON file: " + e.getMessage(), "OSSSLPinning", e);
+      Log.v("X509TrustManagerWrapper", "JSONException: "+e.getMessage());
+      logger.logError("X509TrustManagerWrapper - JSONException: " + e.getMessage() , "OSSSLPinning");
       return null;
     }
   }

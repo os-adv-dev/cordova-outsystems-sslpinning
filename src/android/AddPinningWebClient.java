@@ -1,5 +1,6 @@
 package com.outsystems.plugins.sslpinning;
 
+import android.util.Pair;
 import android.webkit.MimeTypeMap;
 import android.webkit.WebResourceResponse;
 
@@ -12,6 +13,7 @@ import com.outsystems.plugins.sslpinning.pinning.OkHttpClientWrapper;
 import com.outsystems.plugins.sslpinning.pinning.X509TrustManagerWrapper;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -26,31 +28,33 @@ import okhttp3.Response;
 
 public class AddPinningWebClient {
 
-    private Logger logger = OSLogger.getInstance();
+    private final Logger logger = OSLogger.getInstance();
 
-    public WebResourceResponse getSSLUrlValidation(String url) {
-        CompletableFuture<Boolean> sslPinningFuture = new CompletableFuture<>();
+    public WebResourceResponse getSSLUrlValidation(String url, Map<String, String> headers) {
+        CompletableFuture<Pair<Boolean, String>> sslPinningFuture = new CompletableFuture<>();
         requestSSLPinning(url, new SSLErrorCallback() {
             @Override
             public void onError(String code, String message) {
-                sslPinningFuture.complete(false);
+                logger.logError("Failed to parse pinning JSON file: "+message, "OSSSLPinning");
+                sslPinningFuture.complete(new Pair<>(false, message));
             }
 
             @Override
             public void onSuccess() {
-                sslPinningFuture.complete(true);
+                sslPinningFuture.complete(new Pair<>(true, "success"));
             }
         });
 
         try {
-            if (!sslPinningFuture.get()) {
+            if (!sslPinningFuture.get().first) {
                 String extension = MimeTypeMap.getFileExtensionFromUrl(url);
                 String mimeType = MimeTypesHelper.getInstance().getMimeType(extension);
-                return new WebResourceResponse(mimeType, "UTF-8", 525, "SSLPinning found some problem with the request!", null, null);
+                return new WebResourceResponse(mimeType, "UTF-8", 525, "SSLPinning found some problem with the request "+ sslPinningFuture.get().second, headers, null);
             }
         } catch (InterruptedException | ExecutionException e) {
+            logger.logError("Failed to parse pinning ExecutionException: " + e.getMessage(), "OSSSLPinning");
             e.printStackTrace();
-            return null;
+            return new WebResourceResponse("text/plain", "UTF-8", 525, "SSLPinning execution error: " + e.getMessage(), headers, null);
         }
         return null;
     }
@@ -68,14 +72,18 @@ public class AddPinningWebClient {
         call.enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                System.out.println("--- ❌ --- SSLPinning found some problem with the request!");
-                callback.onError("525", "SSLPinning found some problem with the request!");
+                logger.logError("Failure to requestSSLPinning : " + e.getMessage(), "OSSSLPinning");
+                callback.onError("525", "SSLPinning found some problem with the request: "+e.getMessage());
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
-                System.out.println("--- ✅ --- Success SSL Validation ok");
-                callback.onSuccess();
+                if(response.isSuccessful()) {
+                    callback.onSuccess();
+                } else {
+                    String message = response.message();
+                    callback.onError(String.valueOf(response.code()), "SSLPinning found some problem with the request: "+message);
+                }
             }
         });
     }
@@ -99,7 +107,7 @@ public class AddPinningWebClient {
             ConnectionPool cP = new ConnectionPool(5, keepAliveConnection, TimeUnit.SECONDS);
             clientBuilder.connectionPool(cP);
         } catch (Exception e) {
-            logger.logError("Failed to get preference " + "sslpinning-connection-keep-alive" + ": " + e.getMessage(), "OSSSLPinning", e);
+            logger.logError("Failed to get preference " + "sslpinning-connection-keep-alive" + ": " + e.getMessage(), "OSSSLPinning");
         }
         return clientBuilder;
     }
