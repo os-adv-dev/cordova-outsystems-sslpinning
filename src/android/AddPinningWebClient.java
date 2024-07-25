@@ -13,7 +13,6 @@ import com.outsystems.plugins.sslpinning.pinning.OkHttpClientWrapper;
 import com.outsystems.plugins.sslpinning.pinning.X509TrustManagerWrapper;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +29,7 @@ public class AddPinningWebClient {
 
     private final Logger logger = OSLogger.getInstance();
 
-    public WebResourceResponse getSSLUrlValidation(String url, Map<String, String> headers) {
+    public WebResourceResponse getSSLUrlValidation(String url) {
         CompletableFuture<Pair<Boolean, String>> sslPinningFuture = new CompletableFuture<>();
         requestSSLPinning(url, new SSLErrorCallback() {
             @Override
@@ -49,12 +48,12 @@ public class AddPinningWebClient {
             if (!sslPinningFuture.get().first) {
                 String extension = MimeTypeMap.getFileExtensionFromUrl(url);
                 String mimeType = MimeTypesHelper.getInstance().getMimeType(extension);
-                return new WebResourceResponse(mimeType, "UTF-8", 525, "SSLPinning found some problem with the request "+ sslPinningFuture.get().second, headers, null);
+                return new WebResourceResponse(mimeType, "UTF-8", 525, "SSLPinning found some problem with the request "+ sslPinningFuture.get().second, null, null);
             }
         } catch (InterruptedException | ExecutionException e) {
             logger.logError("Failed to parse pinning ExecutionException: " + e.getMessage(), "OSSSLPinning");
             e.printStackTrace();
-            return new WebResourceResponse("text/plain", "UTF-8", 525, "SSLPinning execution error: " + e.getMessage(), headers, null);
+            return new WebResourceResponse("text/plain", "UTF-8", 525, "SSLPinning execution error: " + e.getMessage(), null, null);
         }
         return null;
     }
