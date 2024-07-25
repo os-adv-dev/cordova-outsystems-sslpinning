@@ -90,6 +90,25 @@ The configuration file is expected to have the following structure:
 
 And the file *must* be placed under:
 
+
+To for use Fallback URL To JSON SSL Pinning you should pass these paramenters in extensibility global properties example below:
+```json
+{
+    "preferences": {
+        "global": [
+            {
+                "name": "com.outsystems.experts.ssl.remote.fallback_url",
+                "value": "https://mocki.io/v1/ae3a37af-b194-4a5d-aea6-7d0004820772"
+            },
+            {
+                "name": "com.outsystems.experts.ssl.remote.force_use_fallback_url",
+                "value": "false"
+            }
+        ]
+    }
+}
+```
+
 `cordova_root_folder/www/${CFG_FILE_PATH}`
 
 Where [`${CFG_FILE_PATH}`](https://github.com/OutSystems/cordova-outsystems-sslpinning/blob/master/plugin.xml#L10) is set with a default value of `pinning`.
