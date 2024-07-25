@@ -119,7 +119,7 @@ public class PinningRemoteConfig {
                 logger.logError("Failed to fetch JSON from fallback API: " + serverPinningUrl, "OSSSLPinning");
                 callback.onError("JSON from fallback API is EMPTY!");
             } else {
-                logger.logDebug("onPostExecute JSON success result: error the API:  "+serverPinningUrl+" - json response: "result, "OSSSLPinning");
+                logger.logDebug("onPostExecute JSON success result: error the API:  "+serverPinningUrl+" - json response: "+result, "OSSSLPinning");
                 callback.onConfigFetched(result);
             }
         }
