@@ -91,7 +91,7 @@ The configuration file is expected to have the following structure:
 And the file *must* be placed under:
 
 
-To for use Fallback URL To JSON SSL Pinning you should pass these paramenters in extensibility global properties example below:
+To use fallback URL to donwload JSON SSL Pinning you can pass these paramenters in extensibility configurations properties, example below:
 ```json
 {
     "preferences": {
