@@ -34,11 +34,6 @@
     </platform>
 
     <platform name="android">
-
-        <preference name="URL_FALLBACK_SSL_PINNING" default=""/>
-        <preference name="FORCE_USE_URL_FALLBACK" default="false"/>
-
-
         <!-- JS API -->
         <js-module src="www/NativeXMLHttpRequest.js" name="NativeXMLHttpRequest">
             <merges target="window" />
@@ -80,13 +75,6 @@
         <framework src="libs/android/xmlhttprequest_build.gradle" custom="true" type="gradleReference" />
         <hook type="before_build" src="hooks/android/enableGoogleServicesHook.js" />
         <hook type="after_plugin_install" src="hooks/android/modifyWebClient.js" />
-
-         <!-- Variables Service ID -->
-       <config-file target="res/values/strings.xml" parent="/*">
-            <string name="URL_FALLBACK_SSL_PINNING">$URL_FALLBACK_SSL_PINNING</string>
-            <string name="FORCE_USE_URL_FALLBACK">$FORCE_USE_URL_FALLBACK</string>
-        </config-file>
-        <!-- End Variables -->
 
     </platform>
 </plugin>

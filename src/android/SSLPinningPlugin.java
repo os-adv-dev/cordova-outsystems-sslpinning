@@ -31,6 +31,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import org.apache.cordova.CordovaPreferences;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocketFactory;
@@ -64,10 +65,20 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 	protected void pluginInitialize() {
 		super.pluginInitialize();
 
-		String fallbackUrl = cordova.getActivity().getString(cordova.getActivity().getResources().getIdentifier("URL_FALLBACK_SSL_PINNING", "string", cordova.getActivity().getPackageName()));
-		boolean forceUrlFallbackUrl = Boolean.parseBoolean(cordova.getActivity().getString(cordova.getActivity().getResources().getIdentifier("FORCE_USE_URL_FALLBACK", "string", cordova.getActivity().getPackageName())));
+		CordovaPreferences preferences = this.preferences;
+		if(preferences != null) {
 
-		pinningRemoteConfig = new PinningRemoteConfig(fallbackUrl, forceUrlFallbackUrl);
+			String fallbackUrl = preferences.getString("com.outsystems.experts.ssl.remote.fallback_url", null);
+			boolean forceUrlFallbackUrl = Boolean.parseBoolean(preferences.getString("com.outsystems.experts.ssl.remote.force_use_fallback_url", "false"));
+
+			Log.v("TAG", ">>> fallbackUrl :: "+fallbackUrl);
+			Log.v("TAG", ">>> forceUrlFallbackUrl:: "+forceUrlFallbackUrl);
+
+			pinningRemoteConfig = new PinningRemoteConfig(fallbackUrl, forceUrlFallbackUrl);
+		} else {
+			pinningRemoteConfig = new PinningRemoteConfig(null, false);
+		}
+
 		certificatePinningFuture = getCertificatePinningAsync();
 
 		// Register Security implementation
@@ -239,8 +250,13 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 	}
 
 	private void fetchFallbackConfig(String url, CallbackContext callbackContext) {
-		String fallbackUrl = cordova.getActivity().getString(cordova.getActivity().getResources().getIdentifier("URL_FALLBACK_SSL_PINNING", "string", cordova.getActivity().getPackageName()));
-		new FetchFallbackConfigTask(url, callbackContext).execute(fallbackUrl);
+		CordovaPreferences preferences = this.preferences;
+		String fallbackUrl = preferences.getString("com.outsystems.experts.ssl.remote.fallback_url", null);
+		if (fallbackUrl == null) {
+			sendError(callbackContext, "1", "Failed to get the fallback URL, cannot be empty!");
+		} else {
+			new FetchFallbackConfigTask(url, callbackContext).execute(fallbackUrl);
+		}
 	}
 
 	@SuppressLint("StaticFieldLeak")
