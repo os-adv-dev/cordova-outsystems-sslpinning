@@ -43,7 +43,9 @@ public class PinningRemoteConfig {
                     String jsonString = firebaseRemoteConfig.getString(SSL_PINNING_CONFIG);
                     if (!jsonString.isEmpty()) {
                         try {
-                            callback.onConfigFetched(jsonString);
+                            //callback.onConfigFetched(jsonString);
+                            logger.logDebug("Force Firebase Error to Download Keys from Remote Config"  , "OSSSLPinning");
+                            throw new Exception("Force Firebase Error to Download Keys from Remote Config");
                         } catch (Exception e) {
                             Log.v(TAG, "PinningRemoteConfig: " + e.getMessage());
                             logger.logError("Failed to fetch JSON from Firebase Remote Config: " + e.getMessage(), "OSSSLPinning");
@@ -65,6 +67,7 @@ public class PinningRemoteConfig {
 
     private void fetchFallbackConfig(RemoteConfigCallback callback) {
         if (serverPinningUrl != null && !serverPinningUrl.isEmpty()) {
+            logger.logDebug("fetchFallbackConfig calling the API:  "+serverPinningUrl  , "OSSSLPinning");
             new FetchFallbackConfigTask(callback).execute(serverPinningUrl);
         } else {
             callback.onError("Error to retrieve the Json SSL Pinning Firebase Remote Config or URL Fallback");
@@ -93,9 +96,11 @@ public class PinningRemoteConfig {
                     response.append(inputLine);
                 }
                 in.close();
-
-                return response.toString();
+                String responseJson = response.toString();
+                logger.logDebug("fetchFallbackConfig JSON download success the API:  "+serverPinningUrl+" - json response: "+responseJson  , "OSSSLPinning");
+                return responseJson;
             } catch (Exception e) {
+                logger.logDebug("fetchFallbackConfig JSON download error the API:  "+serverPinningUrl+" - json response: "+e.getMessage(), "OSSSLPinning");
                 exception = e;
                 return null;
             } finally {
@@ -114,6 +119,7 @@ public class PinningRemoteConfig {
                 logger.logError("Failed to fetch JSON from fallback API: " + serverPinningUrl, "OSSSLPinning");
                 callback.onError("JSON from fallback API is EMPTY!");
             } else {
+                logger.logDebug("onPostExecute JSON success result: error the API:  "+serverPinningUrl+" - json response: "result, "OSSSLPinning");
                 callback.onConfigFetched(result);
             }
         }
