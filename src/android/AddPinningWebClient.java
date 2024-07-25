@@ -77,12 +77,8 @@ public class AddPinningWebClient {
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
-                if(response.isSuccessful()) {
-                    callback.onSuccess();
-                } else {
-                    String message = response.message();
-                    callback.onError(String.valueOf(response.code()), "SSLPinning found some problem with the request: "+message);
-                }
+                logger.logDebug("OnResponse to requestSSLPinning : " + response.message(), "OSSSLPinning");
+                callback.onSuccess();
             }
         });
     }
