@@ -1,6 +1,7 @@
 package com.outsystems.plugins.sslpinning;
 
 import android.annotation.SuppressLint;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
 
@@ -23,7 +24,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -95,9 +100,10 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 			return false;
 		}
 
-		if(action.equals("checkCertificate")){
+		if(action.equals("checkCertificate")) {
 			String urlString = args.getString(0);
-			request(urlString,callbackContext);
+			//request(urlString,callbackContext);
+			requestCertificate(urlString,callbackContext);
 			return true;
 		}
 		return false;
@@ -188,6 +194,107 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 		return future;
 	}
 
+	private void requestCertificate(final String url, final CallbackContext callbackContext) {
+		preferences.set("isSSLFirebaseRemoteFetch", true);
+
+		try {
+			makeRequest(url, callbackContext);
+		} catch (Exception e) {
+			sendError(callbackContext, "2", "SSLPinning found some problem with the request!");
+		}
+	}
+
+	private void makeRequest(final String url, final CallbackContext callbackContext) {
+		Request request = new Request.Builder().url(url).build();
+
+		int timeout = 10000;
+
+		OkHttpClient.Builder builder = getHttpClientBuilder().connectTimeout(timeout, TimeUnit.MILLISECONDS).readTimeout(timeout, TimeUnit.MILLISECONDS);
+		OkHttpClient client = builder.build();
+
+		Call call = client.newCall(request);
+
+		call.enqueue(new Callback() {
+			@Override
+			public void onFailure(@NonNull Call call, @NonNull IOException e) {
+				Log.v("TAG", ">>>>>>>>> ❌ >>>>>> Exception  :: "+e.getMessage());
+				try {
+					if (e instanceof SSLPeerUnverifiedException) {
+						getHttpClientBuilder().build().certificatePinner().getPins().clear();
+						fetchFallbackConfig(url, callbackContext);
+					} else {
+						logger.logError("Failed to build JSON response on failure: " + e.getMessage(), "OSSSLPinning", e);
+					}
+				} catch (Exception e1) {
+					logger.logError("Failed to build JSON response on failure: " + e1.getMessage(), "OSSSLPinning", e1);
+				}
+			}
+
+			@Override
+			public void onResponse(@NonNull Call call, @NonNull Response response) {
+				PluginResult pluginResultResponse = new PluginResult(PluginResult.Status.OK, true);
+				callbackContext.sendPluginResult(pluginResultResponse);
+			}
+		});
+	}
+
+	private void fetchFallbackConfig(String url, CallbackContext callbackContext) {
+		String fallbackUrl = cordova.getActivity().getString(cordova.getActivity().getResources().getIdentifier("URL_FALLBACK_SSL_PINNING", "string", cordova.getActivity().getPackageName()));
+		new FetchFallbackConfigTask(url, callbackContext).execute(fallbackUrl);
+	}
+
+	@SuppressLint("StaticFieldLeak")
+	private class FetchFallbackConfigTask extends AsyncTask<String, Void, String> {
+		private final String originalUrl;
+		private final CallbackContext callbackContext;
+		private Exception exception;
+
+		public FetchFallbackConfigTask(String originalUrl, CallbackContext callbackContext) {
+			this.originalUrl = originalUrl;
+			this.callbackContext = callbackContext;
+		}
+
+		@Override
+		protected String doInBackground(String... urls) {
+			HttpURLConnection urlConnection = null;
+			try {
+				URL url = new URL(urls[0]);
+				urlConnection = (HttpURLConnection) url.openConnection();
+				BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+				StringBuilder response = new StringBuilder();
+				String inputLine;
+				while ((inputLine = in.readLine()) != null) {
+					response.append(inputLine);
+				}
+				in.close();
+				return response.toString();
+			} catch (Exception e) {
+				exception = e;
+				return null;
+			} finally {
+				if (urlConnection != null) {
+					urlConnection.disconnect();
+				}
+			}
+		}
+
+		@Override
+		protected void onPostExecute(String result) {
+			if (exception != null) {
+				sendError(callbackContext, "1", "Failed to fetch JSON from fallback API: " + exception.getMessage());
+			} else if (result == null || result.isEmpty()) {
+				sendError(callbackContext, "1", "JSON from fallback API is EMPTY!");
+			} else {
+				try {
+					X509TrustManagerWrapper.buildCertificatePinningFromJson(result);
+					request(originalUrl, callbackContext);
+				} catch (Exception e) {
+					sendError(callbackContext, "1", "Failed to parse and set pinning JSON from fallback: " + e.getMessage());
+				}
+			}
+		}
+	}
+
 	private void request(final String url,final CallbackContext callbackContext) {
 		preferences.set("isSSLFirebaseRemoteFetch", true);
 
@@ -222,7 +329,7 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 				}
 
 				@Override
-				public void onResponse(Call call, Response response) throws IOException {
+				public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
 
 					PluginResult pluginResultResponse = new PluginResult(PluginResult.Status.OK,true);
 					callbackContext.sendPluginResult(pluginResultResponse);
@@ -240,6 +347,18 @@ public class SSLPinningPlugin extends CordovaPlugin implements SSLSecurity {
 			PluginResult pluginResultError = new PluginResult(PluginResult.Status.ERROR, jsonErrorResponse);
 			callbackContext.sendPluginResult(pluginResultError);
 		}
+	}
+
+	private void sendError(CallbackContext callbackContext, String code, String message) {
+		JSONObject jsonErrorResponse = new JSONObject();
+		try {
+			jsonErrorResponse.put("Code", code);
+			jsonErrorResponse.put("Message", message);
+		} catch (JSONException e1) {
+			logger.logError("Failed to build JSON response on failure: " + e1.getMessage(), "OSSSLPinning", e1);
+		}
+		PluginResult pluginResultError = new PluginResult(PluginResult.Status.ERROR, jsonErrorResponse);
+		callbackContext.sendPluginResult(pluginResultError);
 	}
 
 	private OkHttpClient.Builder getHttpClientBuilder() {
