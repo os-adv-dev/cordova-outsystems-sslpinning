@@ -43,9 +43,7 @@ public class PinningRemoteConfig {
                     String jsonString = firebaseRemoteConfig.getString(SSL_PINNING_CONFIG);
                     if (!jsonString.isEmpty()) {
                         try {
-                            //callback.onConfigFetched(jsonString);
-                            logger.logDebug("Force Firebase Error to Download Keys from Remote Config"  , "OSSSLPinning");
-                            throw new Exception("Force Firebase Error to Download Keys from Remote Config");
+                            callback.onConfigFetched(jsonString);
                         } catch (Exception e) {
                             Log.v(TAG, "PinningRemoteConfig: " + e.getMessage());
                             logger.logError("Failed to fetch JSON from Firebase Remote Config: " + e.getMessage(), "OSSSLPinning");
